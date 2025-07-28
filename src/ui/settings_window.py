@@ -116,6 +116,8 @@ class SettingsWindow(BaseWindow):
             return self.create_line_edit(current_value, key)
         elif meta_type in ['int', 'float']:
             return self.create_line_edit(str(current_value))
+        elif meta_type == 'list':
+            return self.create_line_edit(', '.join(current_value) if isinstance(current_value, list) else str(current_value), key)
         return None
 
     def create_checkbox(self, value, key):
@@ -221,12 +223,18 @@ class SettingsWindow(BaseWindow):
         elif isinstance(widget, QComboBox):
             widget.setCurrentText(value)
         elif isinstance(widget, QLineEdit):
-            widget.setText(str(value) if value is not None else '')
+            if value_type == 'list' and isinstance(value, list):
+                widget.setText(', '.join(value))
+            else:
+                widget.setText(str(value) if value is not None else '')
         elif isinstance(widget, QWidget) and widget.layout():
             # This is for the model_path widget
             line_edit = widget.layout().itemAt(0).widget()
             if isinstance(line_edit, QLineEdit):
-                line_edit.setText(str(value) if value is not None else '')
+                if value_type == 'list' and isinstance(value, list):
+                    line_edit.setText(', '.join(value))
+                else:
+                    line_edit.setText(str(value) if value is not None else '')
 
     def get_widget_value_typed(self, widget, value_type):
         """Get the value of the widget with proper typing."""
@@ -240,13 +248,18 @@ class SettingsWindow(BaseWindow):
                 return int(text) if text else None
             elif value_type == 'float':
                 return float(text) if text else None
+            elif value_type == 'list':
+                return [item.strip() for item in text.split(',') if item.strip()] if text else []
             else:
                 return text or None
         elif isinstance(widget, QWidget) and widget.layout():
             # This is for the model_path widget
             line_edit = widget.layout().itemAt(0).widget()
             if isinstance(line_edit, QLineEdit):
-                return line_edit.text() or None
+                text = line_edit.text()
+                if value_type == 'list':
+                    return [item.strip() for item in text.split(',') if item.strip()] if text else []
+                return text or None
         return None
 
     def toggle_api_local_options(self, use_api):

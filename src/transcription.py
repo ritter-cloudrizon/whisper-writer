@@ -6,6 +6,7 @@ from faster_whisper import WhisperModel
 from openai import OpenAI
 
 from utils import ConfigManager
+from language_detection import create_language_detector
 
 def create_local_model():
     """
@@ -55,8 +56,22 @@ def transcribe_local(audio_data, local_model=None):
     # Convert int16 to float32
     audio_data_float = audio_data.astype(np.float32) / 32768.0
 
+    # Determine language to use
+    language = model_options['common']['language']
+    
+    # Use language detection if enabled
+    if model_options['common']['auto_detect_language']:
+        detector = create_language_detector(local_model)
+        detected_lang = detector.detect_language(audio_data_float)
+        if detected_lang:
+            language = detected_lang
+            ConfigManager.console_print(f'Using detected language: {language}')
+        else:
+            language = detector.get_fallback_language()
+            ConfigManager.console_print(f'Using fallback language: {language}')
+
     response = local_model.transcribe(audio=audio_data_float,
-                                      language=model_options['common']['language'],
+                                      language=language,
                                       initial_prompt=model_options['common']['initial_prompt'],
                                       condition_on_previous_text=model_options['local']['condition_on_previous_text'],
                                       temperature=model_options['common']['temperature'],
@@ -79,10 +94,24 @@ def transcribe_api(audio_data):
     sf.write(byte_io, audio_data, sample_rate, format='wav')
     byte_io.seek(0)
 
+    # Determine language to use
+    language = model_options['common']['language']
+    
+    # Use language detection if enabled
+    if model_options['common']['auto_detect_language']:
+        detector = create_language_detector(None)  # No model needed for API detection
+        detected_lang = detector.detect_language(audio_data)
+        if detected_lang:
+            language = detected_lang
+            ConfigManager.console_print(f'Using detected language: {language}')
+        else:
+            language = detector.get_fallback_language()
+            ConfigManager.console_print(f'Using fallback language: {language}')
+
     response = client.audio.transcriptions.create(
         model=model_options['api']['model'],
         file=('audio.wav', byte_io, 'audio/wav'),
-        language=model_options['common']['language'],
+        language=language,
         prompt=model_options['common']['initial_prompt'],
         temperature=model_options['common']['temperature'],
     )

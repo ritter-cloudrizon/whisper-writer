@@ -10,7 +10,7 @@ model_options:
     language:
       value: null
       type: str
-      description: "The language code for the transcription in ISO-639-1 format."
+      description: "The language code for the transcription in ISO-639-1 format. Set to null for automatic detection."
     temperature:
       value: 0.0
       type: float
@@ -19,6 +19,18 @@ model_options:
       value: null
       type: str
       description: "A string used as an initial prompt to condition the transcription. More info: https://platform.openai.com/docs/guides/speech-to-text/prompting"
+    auto_detect_language:
+      value: false
+      type: bool
+      description: "Enable automatic language detection. When enabled, the system will detect between supported languages."
+    supported_languages:
+      value: ["en", "de"]
+      type: list
+      description: "List of language codes supported for auto-detection. Currently supports English (en) and German (de)."
+    language_detection_confidence_threshold:
+      value: 0.7
+      type: float
+      description: "Minimum confidence threshold for language detection. If confidence is below this value, falls back to default language."
 
   # Configuration options for the OpenAI API
   api:
